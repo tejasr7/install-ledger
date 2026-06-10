@@ -27,7 +27,19 @@ Install Ledger gives you a simple local history so you can answer questions like
 
 ## Install
 
-Build and install from this repo:
+Install directly with Go:
+
+```bash
+go install github.com/tejasr7/install-ledger/cmd/il@latest
+```
+
+This installs the `il` binary into your Go bin directory, usually:
+
+```text
+~/go/bin
+```
+
+For local development, build and install from this repo:
 
 ```bash
 go build -o il ./cmd/il
