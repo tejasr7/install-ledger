@@ -1,14 +1,29 @@
 # Install Ledger
 
-Install Ledger is a local CLI that tracks developer install commands and keeps a simple timeline of changes to your machine.
+Install Ledger is a small local CLI for tracking developer machine installs.
 
-The command is:
+It records install-like shell commands, keeps a searchable timeline, and can scan a clean summary of common developer tools installed on your Mac.
 
 ```bash
-il
+il recent
+il today
+il find codex
+il scan-summary
 ```
 
-It is local-only. Install Ledger writes data under `~/.install-ledger` and does not sync anything to a server.
+Install Ledger is local-only. It writes to `~/.install-ledger` and does not sync data to any server.
+
+## Why
+
+Developer machines change constantly: Homebrew packages, npm globals, VS Code extensions, Python tools, Codex plugins, CLIs, databases, and more.
+
+Install Ledger gives you a simple local history so you can answer questions like:
+
+- What did I install recently?
+- Did I install this tool today?
+- Where is my install history stored?
+- Is the shell hook working?
+- What tools are currently installed?
 
 ## Install
 
@@ -25,87 +40,141 @@ Make sure Go binaries are on your PATH:
 export PATH="$HOME/go/bin:$PATH"
 ```
 
-Initialize shell tracking:
+Initialize tracking:
 
 ```bash
 il init
 source ~/.zshrc
 ```
 
-## Daily usage
+## Quick Start
+
+Check that everything is installed correctly:
+
+```bash
+il doctor
+```
+
+Show recent install events:
 
 ```bash
 il recent
-il today
-il log
+```
+
+Search history:
+
+```bash
 il find codex
+```
+
+Scan your current developer tool inventory:
+
+```bash
 il scan
 il scan-summary
 ```
 
 ## Commands
 
-### `il init`
+| Command | Description |
+| --- | --- |
+| `il init` | Create the data folder and install the zsh tracking hook. |
+| `il recent` | Show the 10 most recent install events. |
+| `il recent -n 5` | Show a custom number of recent install events. |
+| `il today` | Show install events captured today. |
+| `il log` | Show the full install timeline. |
+| `il find <query>` | Search install history. |
+| `il scan` | Save a clean inventory of common developer tools. |
+| `il scan-summary` | Show readable counts from the latest inventory scan. |
+| `il doctor` | Check whether tracking is installed correctly. |
+| `il path` | Show Install Ledger data paths. |
 
-Creates `~/.install-ledger`, writes the zsh hook, and adds the hook source line to `~/.zshrc`.
-
-### `il recent`
-
-Shows the latest install events, newest first.
+## Examples
 
 ```bash
 il recent
-il recent -n 5
-```
-
-### `il today`
-
-Shows install events captured today.
-
-### `il log`
-
-Shows the full plain-text install log.
-
-### `il find <query>`
-
-Searches install history.
-
-```bash
+il recent -n 20
+il today
 il find brew
+il find npm
 il find codex
-il find python
+il doctor
+il path
 ```
 
-### `il scan`
+Example recent output:
 
-Scans a clean default inventory of common developer tooling and saves it to:
+```text
+Recent installs
+
+2026-06-10 01:32:02  codex     codex plugin add pm-toolkit@pm-skills  (/Users/tejasr/production/install-ledger)
+```
+
+Example doctor output:
+
+```text
+Install Ledger Doctor
+
+[OK] il binary found
+[OK] data directory exists
+[OK] zsh hook exists
+[OK] ~/.zshrc sources Install Ledger hook
+[OK] install log exists
+[OK] inventory file exists
+
+Required checks: 4/4 passed
+```
+
+## What Gets Tracked
+
+The shell hook captures install-like commands such as:
+
+- `brew install`
+- `brew tap`
+- `npm install -g`
+- `pnpm add -g`
+- `yarn global add`
+- `pip install`
+- `pipx install`
+- `uv tool install`
+- `cargo install`
+- `go install`
+- `gem install`
+- `conda install`
+- `code --install-extension`
+- `codex plugin add`
+
+Commands are stored as plain text in `install-log.md`.
+
+## Inventory Scan
+
+`il scan` writes a compact inventory to:
 
 ```text
 ~/.install-ledger/inventory.json
 ```
 
-The default scan intentionally avoids very noisy system dumps.
+The v0.2 default scan intentionally avoids huge system dumps. It focuses on useful daily developer inventory:
 
-### `il scan-summary`
+- Homebrew manual packages
+- npm global packages
+- pipx tools
+- uv tools
+- conda environments
+- VS Code extensions
+- basic system information
 
-Shows a readable count summary from the latest inventory file.
+Use:
 
-### `il doctor`
+```bash
+il scan-summary
+```
 
-Checks whether Install Ledger is properly installed:
+to see a readable summary instead of opening the JSON file.
 
-- `il` binary is on PATH
-- data directory exists
-- zsh hook exists
-- `~/.zshrc` sources the hook
-- install log exists
-- inventory file exists
+## Data Files
 
-### `il path`
-
-Prints the Install Ledger data directory and file paths.
-
-## Data files
+Install Ledger stores data here:
 
 ```text
 ~/.install-ledger/
@@ -114,16 +183,39 @@ Prints the Install Ledger data directory and file paths.
   zsh-hook.zsh
 ```
 
-## v0.2 changes
+Show these paths with:
 
-v0.2 made the CLI more useful for daily use:
+```bash
+il path
+```
 
-- Added `il recent`
-- Added `il doctor`
-- Added `il path`
-- Added `il scan-summary`
-- Cleaned up `il scan` so the default inventory is smaller and easier to inspect
+## Privacy
+
+Install Ledger is local-first and local-only.
+
+- No cloud account
+- No background server
+- No telemetry
+- No network sync
+
+Commands are written to a local Markdown log. Basic secret redaction is applied for values like `token=...`, `password=...`, `api_key=...`, and `secret=...`.
+
+## v0.2
+
+v0.2 makes the CLI useful for daily use:
+
+- `il recent`
+- `il doctor`
+- `il path`
+- `il scan-summary`
+- smaller default `il scan` output
 
 ## Roadmap
 
-v0.3 will focus on structured install events. The current log stays plain text in v0.2.
+Planned future work:
+
+- structured install events
+- better package name parsing
+- export commands
+- richer summaries and stats
+- optional full inventory scan mode
