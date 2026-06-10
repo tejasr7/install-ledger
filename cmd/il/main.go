@@ -59,6 +59,26 @@ func main() {
 	recentCmd.Flags().IntP("limit", "n", 10, "Number of recent events to show")
 	rootCmd.AddCommand(recentCmd)
 
+	eventsCmd := &cobra.Command{
+		Use:   "events",
+		Short: "Show structured install events",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			limit, _ := cmd.Flags().GetInt("limit")
+			return ledger.ShowEvents(limit)
+		},
+	}
+
+	eventsCmd.Flags().IntP("limit", "n", 20, "Number of events to show")
+	rootCmd.AddCommand(eventsCmd)
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "migrate",
+		Short: "Migrate old install-log.md entries into structured events",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return ledger.MigrateLogToEvents()
+		},
+	})
+
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "doctor",
 		Short: "Check Install Ledger setup health",

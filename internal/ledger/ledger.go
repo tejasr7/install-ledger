@@ -104,7 +104,13 @@ func Capture(cwd string, command string) error {
 	}
 
 	cleanCommand := redactSecrets(command)
-	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	capturedAt := time.Now()
+	timestamp := capturedAt.Format("2006-01-02 15:04:05")
+
+	event := NewInstallEvent(capturedAt, cwd, cleanCommand)
+	if err := AppendEventIfNew(event); err != nil {
+		return err
+	}
 
 	line := fmt.Sprintf("%s | %s | %s\n", timestamp, cwd, cleanCommand)
 
@@ -225,6 +231,10 @@ func Find(query string) error {
 }
 
 func ShowRecent(limit int) error {
+	return ShowEventRecent(limit)
+}
+
+func ShowRecentFromLog(limit int) error {
 	data, err := os.ReadFile(logFile())
 	if err != nil {
 		fmt.Println("No install log found yet.")
@@ -331,6 +341,7 @@ func ShowPath() error {
 	fmt.Println("Files:")
 	fmt.Println("-", logFile())
 	fmt.Println("-", inventoryFile())
+	fmt.Println("-", eventsFile())
 	fmt.Println("-", hookFile())
 
 	return nil
@@ -520,36 +531,8 @@ func checkWarn(message string) {
 }
 
 func looksLikeInstallCommand(command string) bool {
-	patterns := []string{
-		"brew install",
-		"brew tap",
-		"npm install -g",
-		"npm i -g",
-		"pnpm add -g",
-		"yarn global add",
-		"pip install",
-		"python -m pip install",
-		"python3 -m pip install",
-		"pipx install",
-		"uv tool install",
-		"cargo install",
-		"go install",
-		"gem install",
-		"conda install",
-		"code --install-extension",
-		"codex plugin add",
-		"codex plugin marketplace add",
-	}
-
-	lower := strings.ToLower(command)
-
-	for _, pattern := range patterns {
-		if strings.Contains(lower, pattern) {
-			return true
-		}
-	}
-
-	return false
+	manager, _, _, name, source := parseInstallCommand(command)
+	return manager != "unknown" && (name != "" || source != "")
 }
 
 func redactSecrets(command string) string {
