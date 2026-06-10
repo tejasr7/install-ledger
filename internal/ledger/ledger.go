@@ -132,15 +132,12 @@ func Scan() error {
 			"hostname": run("hostname"),
 		},
 		Tools: map[string]string{
-			"brew":              runIfExists("brew", "brew list --versions"),
 			"brew_leaves":       runIfExists("brew", "brew leaves"),
 			"npm_global":        runIfExists("npm", "npm list -g --depth=0"),
 			"pipx":              runIfExists("pipx", "pipx list"),
 			"uv_tools":          runIfExists("uv", "uv tool list"),
 			"conda_envs":        runIfExists("conda", "conda env list"),
 			"vscode_extensions": runIfExists("code", "code --list-extensions"),
-			"codex_plugins":     runIfExists("codex", "codex plugin list"),
-			"mac_pkgutil":       run("pkgutil --pkgs"),
 		},
 	}
 
@@ -225,6 +222,301 @@ func Find(query string) error {
 	}
 
 	return nil
+}
+
+func ShowRecent(limit int) error {
+	data, err := os.ReadFile(logFile())
+	if err != nil {
+		fmt.Println("No install log found yet.")
+		fmt.Println("Run: il init")
+		return nil
+	}
+
+	lines := cleanLines(string(data))
+	if len(lines) == 0 {
+		fmt.Println("Install log is empty.")
+		return nil
+	}
+
+	if limit <= 0 {
+		limit = 10
+	}
+
+	start := len(lines) - limit
+	if start < 0 {
+		start = 0
+	}
+
+	fmt.Println("Recent installs")
+	fmt.Println("")
+
+	for i := len(lines) - 1; i >= start; i-- {
+		fmt.Println(formatLogLine(lines[i]))
+	}
+
+	return nil
+}
+
+func Doctor() error {
+	home, _ := os.UserHomeDir()
+	zshrcPath := filepath.Join(home, ".zshrc")
+	sourceLine := `source "$HOME/.install-ledger/zsh-hook.zsh"`
+
+	fmt.Println("Install Ledger Doctor")
+	fmt.Println("")
+
+	passed := 0
+	required := 4
+
+	if commandExists("il") {
+		checkOK("il binary found")
+		passed++
+	} else {
+		checkFail("il binary not found in PATH")
+	}
+
+	if fileExists(ledgerDir()) {
+		checkOK("data directory exists")
+		passed++
+	} else {
+		checkFail("data directory missing")
+	}
+
+	if fileExists(hookFile()) {
+		checkOK("zsh hook exists")
+		passed++
+	} else {
+		checkFail("zsh hook missing")
+	}
+
+	zshrcContent := ""
+	if data, err := os.ReadFile(zshrcPath); err == nil {
+		zshrcContent = string(data)
+	}
+
+	if strings.Contains(zshrcContent, sourceLine) {
+		checkOK("~/.zshrc sources Install Ledger hook")
+		passed++
+	} else {
+		checkFail("~/.zshrc does not source Install Ledger hook")
+	}
+
+	if fileExists(logFile()) {
+		checkOK("install log exists")
+	} else {
+		checkWarn("install log does not exist yet")
+	}
+
+	if fileExists(inventoryFile()) {
+		checkOK("inventory file exists")
+	} else {
+		checkWarn("inventory file does not exist yet")
+	}
+
+	fmt.Println("")
+	fmt.Printf("Required checks: %d/%d passed\n", passed, required)
+	fmt.Println("")
+	fmt.Println("Data folder:")
+	fmt.Println(ledgerDir())
+
+	return nil
+}
+
+func ShowPath() error {
+	fmt.Println("Install Ledger paths")
+	fmt.Println("")
+	fmt.Println("Data folder:")
+	fmt.Println(ledgerDir())
+	fmt.Println("")
+	fmt.Println("Files:")
+	fmt.Println("-", logFile())
+	fmt.Println("-", inventoryFile())
+	fmt.Println("-", hookFile())
+
+	return nil
+}
+
+func ScanSummary() error {
+	data, err := os.ReadFile(inventoryFile())
+	if err != nil {
+		fmt.Println("No inventory found yet.")
+		fmt.Println("Run: il scan")
+		return nil
+	}
+
+	var inventory Inventory
+	if err := json.Unmarshal(data, &inventory); err != nil {
+		return err
+	}
+
+	fmt.Println("Install Ledger Scan Summary")
+	fmt.Println("")
+	fmt.Println("Scanned at:", inventory.ScannedAt)
+	fmt.Println("")
+
+	if len(inventory.System) > 0 {
+		fmt.Println("System")
+		printSystemValue("OS", inventory.System["os"])
+		printSystemValue("Kernel", inventory.System["kernel"])
+		printSystemValue("Machine", inventory.System["machine"])
+		printSystemValue("Host", inventory.System["hostname"])
+		fmt.Println("")
+	}
+
+	fmt.Println("Tools")
+	printToolCount("Homebrew manual packages", inventory.Tools["brew_leaves"], countCleanLines)
+	printToolCount("npm global packages", inventory.Tools["npm_global"], countNPMGlobals)
+	printToolCount("pipx tools", inventory.Tools["pipx"], countCleanLines)
+	printToolCount("uv tools", inventory.Tools["uv_tools"], countUVTools)
+	printToolCount("conda environments", inventory.Tools["conda_envs"], countCondaEnvs)
+	printToolCount("VS Code extensions", inventory.Tools["vscode_extensions"], countCleanLines)
+
+	return nil
+}
+
+func cleanLines(content string) []string {
+	rawLines := strings.Split(content, "\n")
+	lines := make([]string, 0, len(rawLines))
+
+	for _, line := range rawLines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+
+	return lines
+}
+
+func formatLogLine(line string) string {
+	parts := strings.SplitN(line, " | ", 3)
+	if len(parts) != 3 {
+		return line
+	}
+
+	timestamp := parts[0]
+	cwd := parts[1]
+	command := parts[2]
+	manager := detectManager(command)
+
+	return fmt.Sprintf("%s  %-8s  %s  (%s)", timestamp, manager, command, cwd)
+}
+
+func detectManager(command string) string {
+	lower := strings.ToLower(command)
+
+	switch {
+	case strings.Contains(lower, "brew "):
+		return "brew"
+	case strings.Contains(lower, "npm "):
+		return "npm"
+	case strings.Contains(lower, "pnpm "):
+		return "pnpm"
+	case strings.Contains(lower, "yarn "):
+		return "yarn"
+	case strings.Contains(lower, "pipx "):
+		return "pipx"
+	case strings.Contains(lower, "pip "):
+		return "pip"
+	case strings.Contains(lower, "uv "):
+		return "uv"
+	case strings.Contains(lower, "cargo "):
+		return "cargo"
+	case strings.Contains(lower, "go install"):
+		return "go"
+	case strings.Contains(lower, "gem "):
+		return "gem"
+	case strings.Contains(lower, "conda "):
+		return "conda"
+	case strings.Contains(lower, "code --install-extension"):
+		return "vscode"
+	case strings.Contains(lower, "codex "):
+		return "codex"
+	default:
+		return "unknown"
+	}
+}
+
+func printSystemValue(label string, value string) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return
+	}
+
+	fmt.Printf("- %s: %s\n", label, value)
+}
+
+func printToolCount(label string, raw string, count func(string) int) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		fmt.Printf("- %-28s %s\n", label+":", "not found / empty")
+		return
+	}
+
+	total := count(raw)
+	if total == 0 {
+		fmt.Printf("- %-28s %s\n", label+":", "not found / empty")
+		return
+	}
+
+	fmt.Printf("- %-28s %d\n", label+":", total)
+}
+
+func countCleanLines(raw string) int {
+	return len(cleanLines(raw))
+}
+
+func countNPMGlobals(raw string) int {
+	count := 0
+	for _, line := range cleanLines(raw) {
+		if strings.Contains(line, "── ") {
+			count++
+		}
+	}
+
+	return count
+}
+
+func countUVTools(raw string) int {
+	count := 0
+	for _, line := range cleanLines(raw) {
+		if !strings.HasPrefix(line, "- ") {
+			count++
+		}
+	}
+
+	return count
+}
+
+func countCondaEnvs(raw string) int {
+	count := 0
+	for _, line := range cleanLines(raw) {
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+		if strings.Contains(line, "/") {
+			count++
+		}
+	}
+
+	return count
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func checkOK(message string) {
+	fmt.Println("[OK]", message)
+}
+
+func checkFail(message string) {
+	fmt.Println("[FAIL]", message)
+}
+
+func checkWarn(message string) {
+	fmt.Println("[WARN]", message)
 }
 
 func looksLikeInstallCommand(command string) bool {
