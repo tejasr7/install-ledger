@@ -343,6 +343,7 @@ func ShowPath() error {
 	fmt.Println("-", inventoryFile())
 	fmt.Println("-", eventsFile())
 	fmt.Println("-", hookFile())
+	fmt.Println("-", exportsDir())
 
 	return nil
 }

@@ -12,6 +12,7 @@ il events
 il today
 il find codex
 il scan-summary
+il export markdown
 ```
 
 Install Ledger is local-only. It writes to `~/.install-ledger` and does not sync data to any server.
@@ -112,6 +113,7 @@ Show installs since a time period:
 ```bash
 il diff
 il diff today
+il diff yesterday
 il diff 7d
 ```
 
@@ -128,6 +130,14 @@ il scan
 il scan-summary
 ```
 
+Export install history and inventory:
+
+```bash
+il export markdown
+il export json
+il export brewfile
+```
+
 ## Commands
 
 | Command | Description |
@@ -139,6 +149,7 @@ il scan-summary
 | `il timeline --days 30` | Show a grouped timeline for a custom number of days. |
 | `il diff` | Show install events since yesterday. |
 | `il diff today` | Show install events from today. |
+| `il diff yesterday` | Show install events since yesterday. |
 | `il diff 7d` | Show install events from the last 7 days. |
 | `il diff 2026-06-01` | Show install events since a specific date. |
 | `il events` | Show structured install events from `events.jsonl`. |
@@ -149,6 +160,9 @@ il scan-summary
 | `il find <query>` | Search install history. |
 | `il scan` | Save a clean inventory of common developer tools. |
 | `il scan-summary` | Show readable counts from the latest inventory scan. |
+| `il export markdown` | Export a human-readable Markdown report. |
+| `il export json` | Export structured events and inventory as JSON. |
+| `il export brewfile` | Export Homebrew manual packages as a Brewfile. |
 | `il doctor` | Check whether tracking is installed correctly. |
 | `il path` | Show Install Ledger data paths. |
 
@@ -161,6 +175,7 @@ il timeline
 il timeline --days 30
 il diff
 il diff today
+il diff yesterday
 il diff 7d
 il diff 2026-06-01
 il events
@@ -170,6 +185,9 @@ il today
 il find brew
 il find npm
 il find codex
+il export markdown
+il export json
+il export brewfile
 il doctor
 il path
 ```
@@ -265,6 +283,36 @@ If you have older plain-text logs, migrate them with:
 il migrate
 ```
 
+## Export
+
+Export your install history and inventory:
+
+```bash
+il export markdown
+il export json
+il export brewfile
+```
+
+Use a custom output path:
+
+```bash
+il export markdown --out setup.md
+il export json --out install-ledger.json
+il export brewfile --out Brewfile
+```
+
+Exports are saved by default to:
+
+```text
+~/.install-ledger/exports/
+```
+
+Export formats:
+
+- Markdown report for sharing, backups, and README demos
+- JSON export for future dashboard, API, or import workflows
+- Brewfile export for reinstalling Homebrew packages
+
 ## Inventory Scan
 
 `il scan` writes a compact inventory to:
@@ -301,6 +349,7 @@ Install Ledger stores data here:
   events.jsonl
   inventory.json
   zsh-hook.zsh
+  exports/
 ```
 
 Show these paths with:
@@ -346,6 +395,19 @@ v0.4.0 adds timeline and diff views:
 
 For now, `diff` means install events since a time period. It does not compare inventory snapshots or detect uninstalls yet.
 
+## v0.5.0
+
+v0.5.0 adds export commands:
+
+- `il export markdown`
+- `il export json`
+- `il export brewfile`
+- `il export markdown --out setup.md`
+- `il export json --out install-ledger.json`
+- `il export brewfile --out Brewfile`
+
+Default exports are written to `~/.install-ledger/exports/`.
+
 ## v0.2
 
 v0.2 makes the CLI useful for daily use:
@@ -361,7 +423,6 @@ v0.2 makes the CLI useful for daily use:
 Planned future work:
 
 - better package name parsing
-- export commands
 - richer summaries and stats
 - optional full inventory scan mode
 

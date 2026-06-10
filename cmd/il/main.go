@@ -130,6 +130,19 @@ func main() {
 		},
 	})
 
+	exportCmd := &cobra.Command{
+		Use:   "export [markdown|json|brewfile]",
+		Short: "Export install history and inventory",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			outPath, _ := cmd.Flags().GetString("out")
+			return ledger.Export(args[0], outPath)
+		},
+	}
+
+	exportCmd.Flags().StringP("out", "o", "", "Output file path")
+	rootCmd.AddCommand(exportCmd)
+
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "find <query>",
 		Short: "Search install history",
