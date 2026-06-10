@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -46,6 +45,34 @@ func main() {
 			return ledger.ShowToday()
 		},
 	})
+
+	timelineCmd := &cobra.Command{
+		Use:   "timeline",
+		Short: "Show grouped install timeline",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			days, _ := cmd.Flags().GetInt("days")
+			return ledger.ShowTimeline(days)
+		},
+	}
+
+	timelineCmd.Flags().IntP("days", "d", 7, "Number of days to show")
+	rootCmd.AddCommand(timelineCmd)
+
+	diffCmd := &cobra.Command{
+		Use:   "diff [since]",
+		Short: "Show install events since a time period",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			since := "yesterday"
+			if len(args) > 0 {
+				since = args[0]
+			}
+
+			return ledger.ShowDiff(since)
+		},
+	}
+
+	rootCmd.AddCommand(diffCmd)
 
 	recentCmd := &cobra.Command{
 		Use:   "recent",
@@ -125,7 +152,6 @@ func main() {
 	rootCmd.AddCommand(captureCmd)
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 }

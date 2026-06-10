@@ -6,6 +6,8 @@ It records install-like shell commands, keeps a searchable timeline, and can sca
 
 ```bash
 il recent
+il timeline
+il diff today
 il events
 il today
 il find codex
@@ -28,7 +30,13 @@ Install Ledger gives you a simple local history so you can answer questions like
 
 ## Install
 
-Install directly with Go:
+Install with Homebrew:
+
+```bash
+brew install tejasr7/tap/il
+```
+
+Or install directly with Go:
 
 ```bash
 go install github.com/tejasr7/install-ledger/cmd/il@latest
@@ -60,6 +68,18 @@ il init
 source ~/.zshrc
 ```
 
+## Usage
+
+```bash
+il init
+il scan
+il today
+il recent
+il events
+il find codex
+il doctor
+```
+
 ## Quick Start
 
 Check that everything is installed correctly:
@@ -78,6 +98,21 @@ Show structured install events:
 
 ```bash
 il events
+```
+
+Show a grouped timeline:
+
+```bash
+il timeline
+il timeline --days 30
+```
+
+Show installs since a time period:
+
+```bash
+il diff
+il diff today
+il diff 7d
 ```
 
 Search history:
@@ -100,6 +135,12 @@ il scan-summary
 | `il init` | Create the data folder and install the zsh tracking hook. |
 | `il recent` | Show the 10 most recent install events. |
 | `il recent -n 5` | Show a custom number of recent install events. |
+| `il timeline` | Show install events grouped by date and manager. |
+| `il timeline --days 30` | Show a grouped timeline for a custom number of days. |
+| `il diff` | Show install events since yesterday. |
+| `il diff today` | Show install events from today. |
+| `il diff 7d` | Show install events from the last 7 days. |
+| `il diff 2026-06-01` | Show install events since a specific date. |
 | `il events` | Show structured install events from `events.jsonl`. |
 | `il events -n 5` | Show a custom number of structured events. |
 | `il migrate` | Migrate old `install-log.md` entries into structured events. |
@@ -116,6 +157,12 @@ il scan-summary
 ```bash
 il recent
 il recent -n 20
+il timeline
+il timeline --days 30
+il diff
+il diff today
+il diff 7d
+il diff 2026-06-01
 il events
 il events -n 5
 il migrate
@@ -133,6 +180,38 @@ Example recent output:
 Recent installs
 
 2026-06-10 01:32  codex     plugin_add          pm-toolkit               from pm-skills
+```
+
+Example timeline output:
+
+```text
+Install Timeline
+Last 7 days
+
+2026-06-10
+  brew
+    + install ffmpeg
+
+  codex
+    + plugin_add pm-toolkit from pm-skills
+
+  npm
+    + global_install vercel
+```
+
+Example diff output:
+
+```text
+Install Ledger Diff
+Since: today
+
+Summary
+- brew:    1
+- codex:   2
+- npm:     1
+
+Added
++ 2026-06-10 14:40  brew      install ffmpeg
 ```
 
 Example doctor output:
@@ -252,6 +331,20 @@ v0.3.0 adds structured install events:
 - `il recent` now prefers structured events and falls back to the old text log
 
 The old `install-log.md` file is still written for backward compatibility.
+
+## v0.4.0
+
+v0.4.0 adds timeline and diff views:
+
+- `il timeline`
+- `il timeline --days 30`
+- `il diff`
+- `il diff today`
+- `il diff yesterday`
+- `il diff 7d`
+- `il diff 2026-06-01`
+
+For now, `diff` means install events since a time period. It does not compare inventory snapshots or detect uninstalls yet.
 
 ## v0.2
 
